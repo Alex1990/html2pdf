@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/eKoopmans/html2pdf",
   "dependencies": {
-    "html2canvas": "https://github.com/eKoopmans/html2canvas/tarball/develop",
+    "html2canvas": "https://github.com/Alex1990/html2canvas/tarball/master",
     "jspdf": "^1.3.5",
     "es6-promise": "^4.1.1"
   },
