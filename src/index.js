@@ -158,7 +158,7 @@ html2pdf.makePDF = function(canvas, pageSize, opt) {
   for (var page=0; page<nPages; page++) {
     // Trim the final page to reduce file size.
     if (page === nPages-1) {
-      pageCanvas.height = pxFullHeight % pxPageHeight;
+      pageCanvas.height = (pxFullHeight % pxPageHeight) || pxPageHeight;
       pageHeight = pageCanvas.height * pageSize.inner.width / pageCanvas.width;
     }
 
