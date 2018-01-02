@@ -1,6 +1,6 @@
 /**
  * html2pdf.js v0.8.2
- * Copyright (c) 2017 Erik Koopmans
+ * Copyright (c) 2018 Erik Koopmans
  * Released under the MIT License.
  */
 'use strict';
@@ -338,7 +338,7 @@ html2pdf.makePDF = function (canvas, pageSize, opt) {
   for (var page = 0; page < nPages; page++) {
     // Trim the final page to reduce file size.
     if (page === nPages - 1) {
-      pageCanvas.height = pxFullHeight % pxPageHeight;
+      pageCanvas.height = pxFullHeight % pxPageHeight || pxPageHeight;
       pageHeight = pageCanvas.height * pageSize.inner.width / pageCanvas.width;
     }
 
