@@ -23,7 +23,7 @@ var html2pdf = function(source, opt) {
     width:  pageSize.width - opt.margin[1] - opt.margin[3],
     height: pageSize.height - opt.margin[0] - opt.margin[2]
   };
-  pageSize.inner.ratio = pageSize./inner.height / pageSize.inner.width;
+  pageSize.inner.ratio = pageSize.inner.height / pageSize.inner.width;
 
   // Copy the source element into a PDF-styled container div.
   var container = html2pdf.makeContainer(source, pageSize);
