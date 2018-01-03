@@ -89,6 +89,8 @@ html2pdf.makePDF = function(container, pageSize, opt) {
       }
     });
   }
+
+  addPage();
 };
 
 html2pdf.parseInput = function(source, opt) {
