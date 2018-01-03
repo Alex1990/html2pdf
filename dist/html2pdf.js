@@ -235,8 +235,42 @@ var html2pdf = function html2pdf(source, opt) {
 html2pdf.makePDF = function (container, pageSize, opt) {
   var pxFullHeight = container.scrollHeight;
   var pxPageHeight = pageSize.inner.width * pageSize.k / 72 * 96;
+  var pageTotal = Math.ceil(pxFullHeight / pxPageHeight);
   var pdf = new jsPDF(opt.jsPDF);
-  
+  var page = 0;
+
+  var addPage = function addPage() {
+    container.scrollTop = page * pxPageHeight;
+    html2canvas(container, opt.html2canvas).then(function (canvas) {
+      if (count > 0) {
+        pdf.addPage();
+      }
+
+      var imgData = canvas.toDataURL('image/' + opt.image.type, opt.image.quality);
+      pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0], pageSize.inner.width, pageSize.inner.height);
+
+      if (opt.enableLinks) {
+        var pageTop = page * pageSize.inner.height;
+        opt.links.forEach(function (link) {
+          if (link.clientRect.top > pageTop && link.clientRect.top < pageTop + pageSize.inner.height) {
+            var left = opt.margin[1] + link.clientRect.left;
+            var top = opt.margin[0] + link.clientRect.top - pageTop;
+            pdf.link(left, top, link.clientRect.width, link.clientRect.height, { url: link.el.href });
+          }
+        });
+      }
+
+      page++;
+
+      if (page === pageTotal) {
+        pdf.save(opt.filename);
+      } else {
+        addPage();
+      }
+    });
+  };
+
+  addPage();
 };
 
 html2pdf.parseInput = function (source, opt) {
