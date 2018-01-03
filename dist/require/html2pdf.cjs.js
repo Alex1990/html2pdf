@@ -241,7 +241,7 @@ html2pdf.makePDF = function (container, pageSize, opt) {
   for (var page = 0; page < pageTotal; page++) {
     container.scrollTop = page * pxPageHeight;
     html2canvas(container, opt.html2canvas).then(function (canvas) {
-      if (page > 0) {
+      if (count > 0) {
         pdf.addPage();
       }
 
