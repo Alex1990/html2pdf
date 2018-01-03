@@ -238,18 +238,25 @@ html2pdf.makePDF = function (container, pageSize, opt) {
   var dpi = opt.html2canvas.dpi || 96;
   var batchNumber = Math.ceil(pageTotal * pxPageHeight * (dpi / 96) / maxCanvasHeight);
   var pagePerBatch = Math.ceil(pageTotal / batchNumber);
-  var lastBatchPage = pageTotal % batchNumber === 0 ? 0 : pageTotal % batchNumber;
+  var lastBatchPage = pageTotal % pagePerBatch === 0 ? 0 : pageTotal % pagePerBatch;
   var batchHeight = pagePerBatch * pxPageHeight;
   var pdf = new jsPDF(opt.jsPDF);
   var batchIndex = 0;
+  var source = container.firstElementChild;
+
+  source.style.height = batchHeight * batchNumber + 'px';
+  container.style.height = batchHeight + 'px';
+
+  var pageCanvas = document.createElement('canvas');
+  var pageCtx = pageCanvas.getContext('2d');
+  var pageHeight = pxPageHeight * dpi / 96;
+  var onProgress = opt.onProgress || function () {};
+  var onComplete = opt.onProgress || function () {};
 
   var batchHandler = function batchHandler() {
     container.scrollTop = batchIndex * batchHeight;
-    html2canvas(container, opt.html2canvas).then(function (canvas) {
-      var pageCanvas = document.createElement('canvas');
-      var pageCtx = pageCanvas.getContext('2d');
-      var pageHeight = pageSize.inner.height;
 
+    html2canvas(container, opt.html2canvas).then(function (canvas) {
       pageCanvas.width = canvas.width;
       pageCanvas.height = canvas.width * pageSize.inner.ratio;
 
@@ -268,7 +275,7 @@ html2pdf.makePDF = function (container, pageSize, opt) {
 
         pageCtx.fillStyle = '#fff';
         pageCtx.fillRect(0, 0, w, h);
-        pageCtx.drawImage(canvas, 0, page * pxPageHeight, w, h, 0, 0, w, h);
+        pageCtx.drawImage(canvas, 0, page * pageHeight, w, h, 0, 0, w, h);
 
         var imgData = pageCanvas.toDataURL('image/' + opt.image.type, opt.image.quality);
         pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0], pageSize.inner.width, pageSize.inner.height);
@@ -283,11 +290,18 @@ html2pdf.makePDF = function (container, pageSize, opt) {
             }
           });
         }
+
+        onProgress({
+          current: pagePerBatch * batchIndex + page,
+          total: pageTotal
+        });
       }
 
       batchIndex++;
 
       if (batchIndex === batchNumber) {
+        onComplete();
+        document.body.removeChild(container.parentElement);
         pdf.save(opt.filename);
       } else {
         batchHandler();
