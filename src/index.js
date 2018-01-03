@@ -23,7 +23,7 @@ var html2pdf = function(source, opt) {
     width:  pageSize.width - opt.margin[1] - opt.margin[3],
     height: pageSize.height - opt.margin[0] - opt.margin[2]
   };
-  pageSize.inner.ratio = pageSize.inner.height / pageSize.inner.width;
+  pageSize.inner.ratio = pageSize./inner.height / pageSize.inner.width;
 
   // Copy the source element into a PDF-styled container div.
   var container = html2pdf.makeContainer(source, pageSize);
@@ -48,15 +48,43 @@ var html2pdf = function(source, opt) {
     });
   }
 
-  // Render the canvas and pass the result to makePDF.
-  var onRendered = opt.html2canvas.onrendered || function() {};
-  delete opt.html2canvas.onrendered;
-  var done = function(canvas) {
-    onRendered(canvas);
-    document.body.removeChild(overlay);
-    html2pdf.makePDF(canvas, pageSize, opt);
-  };
-  html2canvas(container, opt.html2canvas).then(done);
+  html2pdf.makePDF(container, pageSize, opt);
+};
+
+html2pdf.makePDF = function(container, pageSize, opt) {
+  var pxFullHeight = container.scrollHeight;
+  var pxPageHeight = pageSize.inner.width * pageSize.k / 72 * 96;
+  var pageTotal = Math.ceil(pxFullHeight / pxPageHeight);
+  var pdf = new jsPDF(opt.jsPDF);
+  var count = 0;
+
+  for (var page = 0; page < pageTotal; i++) {
+    container.scrollTop = page * pxPageHeight;
+    html2canvas(container, opt.html2canvas).then(function (canvas) {
+      pdf.addPage();
+
+      var imgData = pageCanvas.toDataURL('image/' + opt.image.type, opt.image.quality);
+      pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0],
+        pageSize.inner.width, pageHeight);
+
+      if (opt.enableLinks) {
+        var pageTop = page * pageSize.inner.height;
+        opt.links.forEach(function(link) {
+          if (link.clientRect.top > pageTop && link.clientRect.top < pageTop + pageSize.inner.height) {
+            var left = opt.margin[1] + link.clientRect.left;
+            var top = opt.margin[0] + link.clientRect.top - pageTop;
+            pdf.link(left, top, link.clientRect.width, link.clientRect.height, { url: link.el.href });
+          }
+        });
+      }
+
+      count++;
+
+      if (count === pageTotal) {
+        pdf.save(opt.filename);
+      }
+    });
+  }
 };
 
 html2pdf.parseInput = function(source, opt) {
@@ -105,13 +133,24 @@ html2pdf.parseInput = function(source, opt) {
 html2pdf.makeContainer = function(source, pageSize) {
   // Define the CSS styles for the container and its overlay parent.
   var overlayCSS = {
-    position: 'fixed', overflow: 'hidden', zIndex: 1000,
-    left: 0, right: 0, bottom: 0, top: 0,
+    position: 'fixed',
+    overflow: 'hidden',
+    zIndex: 1000,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: 0,
     backgroundColor: 'rgba(0,0,0,0.8)'
   };
   var containerCSS = {
-    position: 'absolute', width: pageSize.inner.width + pageSize.unit,
-    left: 0, right: 0, top: 0, height: 'auto', margin: 'auto',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    margin: 'auto',
+    width: pageSize.inner.width + pageSize.unit,
+    height: pageSize.inner.height + pageSize.unit,
+    overflow: 'hidden',
     backgroundColor: 'white'
   };
 
@@ -137,61 +176,6 @@ html2pdf.makeContainer = function(source, pageSize) {
   // Return the container.
   return container;
 };
-
-html2pdf.makePDF = function(canvas, pageSize, opt) {
-  // Calculate the number of pages.
-  var ctx = canvas.getContext('2d');
-  var pxFullHeight = canvas.height;
-  var pxPageHeight = Math.floor(canvas.width * pageSize.inner.ratio);
-  var nPages = Math.ceil(pxFullHeight / pxPageHeight);
-
-  // Create a one-page canvas to split up the full image.
-  var pageCanvas = document.createElement('canvas');
-  var pageCtx = pageCanvas.getContext('2d');
-  var pageHeight = pageSize.inner.height;
-  pageCanvas.width = canvas.width;
-  pageCanvas.height = pxPageHeight;
-
-  // Initialize the PDF.
-  var pdf = new jsPDF(opt.jsPDF);
-
-  for (var page=0; page<nPages; page++) {
-    // Trim the final page to reduce file size.
-    if (page === nPages-1) {
-      pageCanvas.height = (pxFullHeight % pxPageHeight) || pxPageHeight;
-      pageHeight = pageCanvas.height * pageSize.inner.width / pageCanvas.width;
-    }
-
-    // Display the page.
-    var w = pageCanvas.width;
-    var h = pageCanvas.height;
-    pageCtx.fillStyle = 'white';
-    pageCtx.fillRect(0, 0, w, h);
-    pageCtx.drawImage(canvas, 0, page*pxPageHeight, w, h, 0, 0, w, h);
-
-    // Add the page to the PDF.
-    if (page)  pdf.addPage();
-    var imgData = pageCanvas.toDataURL('image/' + opt.image.type, opt.image.quality);
-    pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0],
-                 pageSize.inner.width, pageHeight);
-
-    // Add hyperlinks.
-    if (opt.enableLinks) {
-      var pageTop = page * pageSize.inner.height;
-      opt.links.forEach(function(link) {
-        if (link.clientRect.top > pageTop && link.clientRect.top < pageTop + pageSize.inner.height) {
-          var left = opt.margin[1] + link.clientRect.left;
-          var top = opt.margin[0] + link.clientRect.top - pageTop;
-          pdf.link(left, top, link.clientRect.width, link.clientRect.height, { url: link.el.href });
-        }
-      });
-    }
-  }
-
-  // Finish the PDF.
-  pdf.save( opt.filename );
-}
-
 
 // Expose the html2pdf function.
 export default html2pdf;
