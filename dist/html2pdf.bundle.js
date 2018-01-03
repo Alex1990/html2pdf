@@ -8532,13 +8532,13 @@ html2pdf.makePDF = function (container, pageSize, opt) {
   var pdf = new jspdf_min(opt.jsPDF);
   var count = 0;
 
-  for (var page = 0; page < pageTotal; i++) {
+  for (var page = 0; page < pageTotal; page++) {
     container.scrollTop = page * pxPageHeight;
     html2canvas$1(container, opt.html2canvas).then(function (canvas) {
       pdf.addPage();
 
-      var imgData = pageCanvas.toDataURL('image/' + opt.image.type, opt.image.quality);
-      pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0], pageSize.inner.width, pageHeight);
+      var imgData = canvas.toDataURL('image/' + opt.image.type, opt.image.quality);
+      pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0], pageSize.inner.width, pageSize.inner.height);
 
       if (opt.enableLinks) {
         var pageTop = page * pageSize.inner.height;
