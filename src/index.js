@@ -56,9 +56,9 @@ html2pdf.makePDF = function(container, pageSize, opt) {
   var pxPageHeight = pageSize.inner.width * pageSize.k / 72 * 96;
   var pageTotal = Math.ceil(pxFullHeight / pxPageHeight);
   var pdf = new jsPDF(opt.jsPDF);
-  var count = 0;
+  var page = 0;
 
-  for (var page = 0; page < pageTotal; page++) {
+  var addPage = function () {
     container.scrollTop = page * pxPageHeight;
     html2canvas(container, opt.html2canvas).then(function (canvas) {
       if (count > 0) {
@@ -80,10 +80,12 @@ html2pdf.makePDF = function(container, pageSize, opt) {
         });
       }
 
-      count++;
+      page++;
 
-      if (count === pageTotal) {
+      if (page === pageTotal) {
         pdf.save(opt.filename);
+      } else {
+        addPage();
       }
     });
   }
