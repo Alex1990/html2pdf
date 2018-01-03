@@ -237,7 +237,9 @@ html2pdf.makePDF = function (container, pageSize, opt) {
   for (var page = 0; page < pageTotal; page++) {
     container.scrollTop = page * pxPageHeight;
     html2canvas(container, opt.html2canvas).then(function (canvas) {
-      pdf.addPage();
+      if (page > 0) {
+        pdf.addPage();
+      }
 
       var imgData = canvas.toDataURL('image/' + opt.image.type, opt.image.quality);
       pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0], pageSize.inner.width, pageSize.inner.height);
@@ -309,20 +311,14 @@ html2pdf.makeContainer = function (source, pageSize) {
   // Define the CSS styles for the container and its overlay parent.
   var overlayCSS = {
     position: 'fixed',
-    overflow: 'hidden',
-    zIndex: 1000,
     left: 0,
-    right: 0,
-    bottom: 0,
-    top: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)'
+    top: 0
   };
   var containerCSS = {
     position: 'absolute',
     left: 0,
-    right: 0,
     top: 0,
-    margin: 'auto',
+    margin: 0,
     width: pageSize.inner.width + pageSize.unit,
     height: pageSize.inner.height + pageSize.unit,
     overflow: 'hidden',
