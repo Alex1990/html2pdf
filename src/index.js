@@ -75,7 +75,7 @@ html2pdf.makePDF = function(container, pageSize, opt) {
   var pageCtx = pageCanvas.getContext('2d');
   var pageHeight = pxPageHeight * dpi / 96;
   var onProgress = opt.onProgress || function () {};
-  var onComplete = opt.onProgress || function () {};
+  var onComplete = opt.onComplete || function () {};
 
   var batchHandler = function () {
     container.scrollTop = batchIndex * batchHeight;
