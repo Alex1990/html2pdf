@@ -74,6 +74,8 @@ html2pdf.makePDF = function(container, pageSize, opt) {
   var pageCanvas = document.createElement('canvas');
   var pageCtx = pageCanvas.getContext('2d');
   var pageHeight = pxPageHeight * dpi / 96;
+  var onProgress = opt.onProgress || function () {};
+  var onComplete = opt.onProgress || function () {};
 
   var batchHandler = function () {
     container.scrollTop = batchIndex * batchHeight;
@@ -121,11 +123,17 @@ html2pdf.makePDF = function(container, pageSize, opt) {
             }
           });
         }
+
+        onProgress({
+          current: pagePerBatch * batchIndex + page,
+          total: pageTotal,
+        });
       }
 
       batchIndex++;
 
       if (batchIndex === batchNumber) {
+        onComplete();
         document.body.removeChild(container.parentElement);
         pdf.save(opt.filename);
       } else {
