@@ -53,39 +53,77 @@ var html2pdf = function(source, opt) {
 
 html2pdf.makePDF = function(container, pageSize, opt) {
   var pxFullHeight = container.scrollHeight;
-  var pxPageHeight = pageSize.inner.width * pageSize.k / 72 * 96;
+  var pxPageHeight = pageSize.inner.height * pageSize.k / 72 * 96;
   var pageTotal = Math.ceil(pxFullHeight / pxPageHeight);
+
+  // The Browser has limit for the maximum height/width of the canvas
+  // https://html2canvas.hertzen.com/faq
+  var maxCanvasHeight = 32767;
+  var dpi = opt.html2canvas.dpi || 96;
+  var batchNumber = Math.ceil((pageTotal * pxPageHeight * (dpi / 96)) / maxCanvasHeight);
+  var pagePerBatch = Math.ceil(pageTotal / batchNumber);
+  var lastBatchPage = pageTotal % batchNumber === 0 ? 0 : pageTotal % batchNumber;
+  var batchHeight = pagePerBatch * pxPageHeight;
   var pdf = new jsPDF(opt.jsPDF);
-  var page = 0;
+  var batchIndex = 0;
 
-  var addPage = function () {
-    container.scrollTop = page * pxPageHeight;
+  var batchHandler = function () {
+    container.scrollTop = batchIndex * batchHeight;
     html2canvas(container, opt.html2canvas).then(function (canvas) {
-      if (count > 0) {
-        pdf.addPage();
+      var pageCanvas = document.createElement('canvas');
+      var pageCtx = pageCanvas.getContext('2d');
+      var pageHeight = pageSize.inner.height;
+      
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = canvas.width * pageSize.inner.ratio;
+
+      var w = pageCanvas.width;
+      var h = pageCanvas.height;
+
+      var page = 0;
+
+      for (var page = 0; page < pagePerBatch; page++) {
+        if (batchIndex === batchNumber - 1 && lastBatchPage > 0 &&
+            page === lastBatchPage) {
+          break;
+        }
+        if ((batchIndex > 0) || (page > 0)) {
+          pdf.addPage();
+        }
+
+        pageCtx.fillStyle = '#fff';
+        pageCtx.fillRect(0, 0, w, h);
+        pageCtx.drawImage(canvas, 0, page * pxPageHeight, w, h, 0, 0, w, h);
+
+        var imgData = pageCanvas.toDataURL('image/' + opt.image.type, opt.image.quality);
+        pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0],
+          pageSize.inner.width, pageSize.inner.height);
+
+        if (opt.enableLinks) {
+          var pageTop = (pagePerBatch * batchIndex + page) * pageSize.inner.height;
+          opt.links.forEach(function(link) {
+            if (link.clientRect.top > pageTop &&
+                link.clientRect.top < pageTop + pageSize.inner.height) {
+              var left = opt.margin[1] + link.clientRect.left;
+              var top = opt.margin[0] + link.clientRect.top - pageTop;
+              pdf.link(
+                left,
+                top,
+                link.clientRect.width,
+                link.clientRect.height,
+                { url: link.el.href }
+              );
+            }
+          });
+        }
       }
 
-      var imgData = canvas.toDataURL('image/' + opt.image.type, opt.image.quality);
-      pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0],
-        pageSize.inner.width, pageSize.inner.height);
+      batchIndex++;
 
-      if (opt.enableLinks) {
-        var pageTop = page * pageSize.inner.height;
-        opt.links.forEach(function(link) {
-          if (link.clientRect.top > pageTop && link.clientRect.top < pageTop + pageSize.inner.height) {
-            var left = opt.margin[1] + link.clientRect.left;
-            var top = opt.margin[0] + link.clientRect.top - pageTop;
-            pdf.link(left, top, link.clientRect.width, link.clientRect.height, { url: link.el.href });
-          }
-        });
-      }
-
-      page++;
-
-      if (page === pageTotal) {
+      if (batchIndex === batchNumber) {
         pdf.save(opt.filename);
       } else {
-        addPage();
+        batchIhandler();
       }
     });
   }
