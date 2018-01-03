@@ -123,12 +123,12 @@ html2pdf.makePDF = function(container, pageSize, opt) {
       if (batchIndex === batchNumber) {
         pdf.save(opt.filename);
       } else {
-        batchIhandler();
+        batchHandler();
       }
     });
   }
 
-  addPage();
+  batchHandler();
 };
 
 html2pdf.parseInput = function(source, opt) {
