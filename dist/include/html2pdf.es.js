@@ -1,5 +1,5 @@
 /**
- * html2pdf.js v0.8.2
+ * html2pdf.js v0.9.1
  * Copyright (c) 2018 Erik Koopmans
  * Released under the MIT License.
  */
@@ -235,8 +235,7 @@ html2pdf.makePDF = function (container, pageSize, opt) {
   // The Browser has limit for the maximum height/width of the canvas
   // https://html2canvas.hertzen.com/faq
   var maxCanvasHeight = 32767;
-  // The default dpi is 192 in html2canvas
-  var dpi = 192;
+  var dpi = Math.round(window.devicePixelRatio * 96);
   var batchNumber = Math.ceil(pageTotal * pxPageHeight * (dpi / 96) / maxCanvasHeight);
   var pagePerBatch = Math.ceil(pageTotal / batchNumber);
   var lastBatchPage = pageTotal % pagePerBatch === 0 ? 0 : pageTotal % pagePerBatch;
