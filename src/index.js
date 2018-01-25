@@ -87,14 +87,30 @@ html2pdf.makePDF = function(container, pageSize, opt) {
       var w = pageCanvas.width;
       var h = pageCanvas.height;
 
-      var page = 0;
+      var addPagesComplete = function () {
+        batchIndex++;
 
-      for (var page = 0; page < pagePerBatch; page++) {
-        if (batchIndex === batchNumber - 1 && lastBatchPage > 0 &&
-            page === lastBatchPage) {
-          break;
+        if (batchIndex === batchNumber) {
+          onComplete();
+          document.body.removeChild(container.parentElement);
+          pdf.save(opt.filename);
+        } else {
+          batchHandler();
         }
-        if ((batchIndex > 0) || (page > 0)) {
+      };
+
+      var addPage = function (page) {
+        if (page >= pagePerBatch) {
+          addPagesComplete();
+          return;
+        }
+
+        if (batchIndex === batchNumber - 1 && lastBatchPage > 0 && page === lastBatchPage) {
+          addPagesComplete();
+          return;
+        }
+
+        if (batchIndex > 0 || page > 0) {
           pdf.addPage();
         }
 
@@ -103,44 +119,32 @@ html2pdf.makePDF = function(container, pageSize, opt) {
         pageCtx.drawImage(canvas, 0, page * pageHeight, w, h, 0, 0, w, h);
 
         var imgData = pageCanvas.toDataURL('image/' + opt.image.type, opt.image.quality);
-        pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0],
-          pageSize.inner.width, pageSize.inner.height);
+        pdf.addImage(imgData, opt.image.type, opt.margin[1], opt.margin[0], pageSize.inner.width, pageSize.inner.height);
 
         if (opt.enableLinks) {
           var pageTop = (pagePerBatch * batchIndex + page) * pageSize.inner.height;
-          opt.links.forEach(function(link) {
-            if (link.clientRect.top > pageTop &&
-                link.clientRect.top < pageTop + pageSize.inner.height) {
+          opt.links.forEach(function (link) {
+            if (link.clientRect.top > pageTop && link.clientRect.top < pageTop + pageSize.inner.height) {
               var left = opt.margin[1] + link.clientRect.left;
               var top = opt.margin[0] + link.clientRect.top - pageTop;
-              pdf.link(
-                left,
-                top,
-                link.clientRect.width,
-                link.clientRect.height,
-                { url: link.el.href }
-              );
+              pdf.link(left, top, link.clientRect.width, link.clientRect.height, { url: link.el.href });
             }
           });
         }
 
         onProgress({
           current: pagePerBatch * batchIndex + page,
-          total: pageTotal,
+          total: pageTotal
         });
-      }
 
-      batchIndex++;
-
-      if (batchIndex === batchNumber) {
-        onComplete();
-        document.body.removeChild(container.parentElement);
-        pdf.save(opt.filename);
-      } else {
-        batchHandler();
-      }
+        setTimeout(function () {
+          addPage(page + 1);
+        }, 0);
+      };
+      var initPage = 0;
+      addPage(initPage);
     });
-  }
+  };
 
   batchHandler();
 };
