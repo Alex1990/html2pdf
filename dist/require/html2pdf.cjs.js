@@ -1,5 +1,5 @@
 /**
- * html2pdf.js v0.9.1
+ * html2pdf.js v0.9.2
  * Copyright (c) 2018 Erik Koopmans
  * Released under the MIT License.
  */
@@ -267,12 +267,29 @@ html2pdf.makePDF = function (container, pageSize, opt) {
       var w = pageCanvas.width;
       var h = pageCanvas.height;
 
-      var page = 0;
+      var addPagesComplete = function addPagesComplete() {
+        batchIndex++;
 
-      for (var page = 0; page < pagePerBatch; page++) {
-        if (batchIndex === batchNumber - 1 && lastBatchPage > 0 && page === lastBatchPage) {
-          break;
+        if (batchIndex === batchNumber) {
+          onComplete();
+          document.body.removeChild(container.parentElement);
+          pdf.save(opt.filename);
+        } else {
+          batchHandler();
         }
+      };
+
+      var addPage = function addPage(page) {
+        if (page >= pagePerBatch) {
+          addPagesComplete();
+          return;
+        }
+
+        if (batchIndex === batchNumber - 1 && lastBatchPage > 0 && page === lastBatchPage) {
+          addPagesComplete();
+          return;
+        }
+
         if (batchIndex > 0 || page > 0) {
           pdf.addPage();
         }
@@ -299,17 +316,13 @@ html2pdf.makePDF = function (container, pageSize, opt) {
           current: pagePerBatch * batchIndex + page,
           total: pageTotal
         });
-      }
 
-      batchIndex++;
-
-      if (batchIndex === batchNumber) {
-        onComplete();
-        document.body.removeChild(container.parentElement);
-        pdf.save(opt.filename);
-      } else {
-        batchHandler();
-      }
+        setTimeout(function () {
+          addPage(page + 1);
+        }, 0);
+      };
+      var initPage = 0;
+      addPage(initPage);
     });
   };
 
